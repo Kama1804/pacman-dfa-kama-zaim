@@ -1,0 +1,110 @@
+/* =============================================
+   INDEX.CSS — Global reset & base styles
+   Pac-Man DFA Simulator · ICS3253
+   ============================================= */
+
+/* Google Fonts import */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800;900&display=swap');
+
+/* ── Box model reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Root / HTML ── */
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #04090f;
+  color: #cfd8dc;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── React root ── */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.6;
+}
+
+strong {
+  font-weight: 700;
+}
+
+/* ── Interactive elements ── */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  border: none;
+}
+
+button:focus-visible {
+  outline: 2px solid #29b6f6;
+  outline-offset: 2px;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* ── Links ── */
+a {
+  color: #29b6f6;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover { color: #81d4fa; }
+
+/* ── Selection ── */
+::selection {
+  background: #1a3a5c;
+  color: #eceff1;
+}
+
+/* ── Scrollbar (webkit) ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #04090f; }
+::-webkit-scrollbar-thumb { background: #0d2240; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #1a3a5c; }
+
+/* ── Utilities ── */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* ── Canvas image rendering ── */
+canvas {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+/* ── Prevent emoji scaling issues ── */
+.emoji {
+  font-style: normal;
+  font-variant: normal;
+}
