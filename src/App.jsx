@@ -36,25 +36,11 @@ const STEP_TABLE = [
   { from:"Eaten",      input:"NoEvent", to:"Eaten",      self:true,  meaning:"(Self-Loop) Ghost eyes still travelling back to base." },
 ];
 
-const ARROWS = [
-  { from:"Wandering",  to:"Chasing",    label:"SeeP",          curve:{ dx:0,   dy:-65 } },
-  { from:"Chasing",    to:"Wandering",  label:"LoseP/KillP",   curve:{ dx:0,   dy:-30 } },
-  { from:"Wandering",  to:"Frightened", label:"EatPP",         curve:{ dx:-55, dy:85  } },
-  { from:"Chasing",    to:"Frightened", label:"EatPP",         curve:{ dx:60,  dy:0   } },
-  { from:"Frightened", to:"Wandering",  label:"Timer",         curve:{ dx:0,   dy:65  } },
-  { from:"Frightened", to:"Eaten",      label:"CatchG",        curve:{ dx:0,   dy:-65 } },
-  { from:"Eaten",      to:"Wandering",  label:"Home",          curve:{ dx:0,   dy:75  } },
-  { from:"Wandering",  to:"Wandering",  label:"NoEvent/KillP", loop:true, loopUp:true  },
-  { from:"Chasing",    to:"Chasing",    label:"SeeP",          loop:true, loopUp:true  },
-  { from:"Frightened", to:"Frightened", label:"NoEvent",       loop:true, loopUp:false },
-  { from:"Eaten",      to:"Eaten",      label:"NoEvent",       loop:true, loopUp:true  },
-];
-
 const STATE_CFG = {
-  Wandering:  { q: "q₀", color:"#29b6f6", bg:"#29b6f618", emoji:"👻", label:"WANDERING",  desc:"Patrolling — random path" },
-  Chasing:    { q: "q₁", color:"#ef5350", bg:"#ef535018", emoji:"😡", label:"CHASING",    desc:"Hunting Pac-Man" },
-  Frightened: { q: "q₂", color:"#ba68c8", bg:"#ba68c818", emoji:"😨", label:"FRIGHTENED", desc:"Vulnerable — fleeing" },
-  Eaten:      { q: "q₃", color:"#78909c", bg:"#78909c18", emoji:"👀", label:"EATEN",      desc:"Eyes returning to base" },
+  Wandering:  { q: "q₀", color:"#0288d1", bg:"#e1f5fe", emoji:"👻", label:"WANDERING",  desc:"Patrolling — random path" },
+  Chasing:    { q: "q₁", color:"#d32f2f", bg:"#ffebee", emoji:"😡", label:"CHASING",    desc:"Hunting Pac-Man" },
+  Frightened: { q: "q₂", color:"#8e24aa", bg:"#f3e5f5", emoji:"😨", label:"FRIGHTENED", desc:"Vulnerable — fleeing" },
+  Eaten:      { q: "q₃", color:"#455a64", bg:"#eceff1", emoji:"👀", label:"EATEN",      desc:"Eyes returning to base" },
 };
 
 // ==========================================
@@ -65,11 +51,11 @@ const COLS = 15, ROWS = 12;
 const BASE       = { r:5, c:7 };
 const PAC_START  = { r:8, c:7 };
 
-const GAME_SEC   = 60;   
-const TICK_MS    = 120;  // 8.3 ticks per second
-const FRIGHT_MAX = 42;   // 5.0 seconds (42 ticks * 120ms)
-const PAC_RESPAWN_TICKS = 17;  // 2.0 seconds
-const GHOST_RESPAWN_TICKS = 25;// 3.0 seconds
+const GAME_SEC   = 90;   
+const TICK_MS    = 250;  // Slower tick
+const FRIGHT_MAX = 20;   // 5.0 seconds
+const PAC_RESPAWN_TICKS = 8;   // 2.0 seconds
+const GHOST_RESPAWN_TICKS = 12;// 3.0 seconds
 
 const MAZE_TEMPLATE = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -189,10 +175,33 @@ function fleeDir(from, target, lastDir) {
 }
 
 // ==========================================
-//  DFA DIAGRAM RENDERER
+//  DFA DIAGRAM RENDERER (MASSIVE LAYOUT UPDATE)
 // ==========================================
-const NP={Wandering:{x:110,y:135},Chasing:{x:300,y:55},Frightened:{x:300,y:215},Eaten:{x:490,y:135}};
-const SVG_W=610,SVG_H=288;
+
+// 🚨 Increased SVG canvas size and spread nodes much further apart 🚨
+const SVG_W=680, SVG_H=380;
+const NP = {
+  Wandering:  { x: 120, y: 190 },
+  Chasing:    { x: 350, y: 105 },
+  Frightened: { x: 350, y: 275 },
+  Eaten:      { x: 580, y: 190 }
+};
+
+// 🚨 Adjusted curve strengths to match the new wide layout 🚨
+const ARROWS = [
+  { from:"Wandering",  to:"Chasing",    label:"SeeP",          curve:{ dx:0,   dy:-75 } },
+  { from:"Chasing",    to:"Wandering",  label:"LoseP/KillP",   curve:{ dx:0,   dy:-35 } },
+  { from:"Wandering",  to:"Frightened", label:"EatPP",         curve:{ dx:-65, dy:95  } },
+  { from:"Chasing",    to:"Frightened", label:"EatPP",         curve:{ dx:75,  dy:0   } },
+  { from:"Frightened", to:"Wandering",  label:"Timer",         curve:{ dx:0,   dy:75  } },
+  { from:"Frightened", to:"Eaten",      label:"CatchG",        curve:{ dx:0,   dy:-75 } },
+  { from:"Eaten",      to:"Wandering",  label:"Home",          curve:{ dx:0,   dy:85  } },
+  { from:"Wandering",  to:"Wandering",  label:"NoEvent/KillP", loop:true, loopUp:true  },
+  { from:"Chasing",    to:"Chasing",    label:"SeeP",          loop:true, loopUp:true  },
+  { from:"Frightened", to:"Frightened", label:"NoEvent",       loop:true, loopUp:false },
+  { from:"Eaten",      to:"Eaten",      label:"NoEvent",       loop:true, loopUp:true  },
+];
+
 function quadPt(p1,p2,cp,t){ return{x:(1-t)*(1-t)*p1.x+2*(1-t)*t*cp.x+t*t*p2.x,y:(1-t)*(1-t)*p1.y+2*(1-t)*t*cp.y+t*t*p2.y}; }
 
 function DFADiagram({currentState,activeArrow,frightPct}){
@@ -203,58 +212,71 @@ function DFADiagram({currentState,activeArrow,frightPct}){
   return(
     <svg width="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{display:"block",overflow:"visible"}}>
       <defs>
+        {/* 🚨 Bigger Arrow Heads 🚨 */}
         {STATES.map(s=>(
-          <marker key={s} id={`m-${s}`} markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
-            <polygon points="0,0 9,3.5 0,7" fill={STATE_CFG[s].color} opacity="0.9"/>
+          <marker key={s} id={`m-${s}`} markerWidth="14" markerHeight="10" refX="10" refY="5" orient="auto">
+            <polygon points="0,0 14,5 0,10" fill={STATE_CFG[s].color} opacity="1"/>
           </marker>
         ))}
-        <marker id="m-active" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
-          <polygon points="0,0 9,3.5 0,7" fill="#fff"/>
+        <marker id="m-active" markerWidth="14" markerHeight="10" refX="10" refY="5" orient="auto">
+          <polygon points="0,0 14,5 0,10" fill="#111"/>
         </marker>
         <filter id="gs"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="gw"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
       {ARROWS.map((a,i)=>{
         const act=isActive(a);
-        const sc=act?"#fff":STATE_CFG[a.to].color;
-        const sw=act?2.8:1.4;
-        const op=act?1:0.38;
+        const sc=act?"#111":STATE_CFG[a.to].color;
+        const sw=act?4.5:3.0; // 🚨 Thicker Paths 🚨
+        const op=act?1:0.7;
+        
         if(a.loop){
-          const{x,y}=NP[a.from],R=28,up=a.loopUp,lH=40,lW=28;
-          const sx=x-lW/2,sy=up?y-R:y+R,ex=x+lW/2,ey=up?y-R:y+R;
-          const cy2=up?y-R-lH:y+R+lH,lY=up?y-R-lH*0.7:y+R+lH*0.7;
+          const{x,y}=NP[a.from], R=40, up=a.loopUp, lH=60, lW=40; // 🚨 Bigger Loops 🚨
+          const sx=x-lW/2, sy=up?y-R:y+R, ex=x+lW/2, ey=up?y-R:y+R;
+          const cy2=up?y-R-lH:y+R+lH, lY=up?y-R-lH*0.7:y+R+lH*0.7;
           return(<g key={i}>
-            <path d={`M${sx},${sy} C${sx-10},${cy2} ${ex+10},${cy2} ${ex},${ey}`} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={act?"none":"5,3"} opacity={op} filter={act?"url(#gs)":"none"} markerEnd={act?"url(#m-active)":`url(#m-${a.to})`}/>
-            <text x={x} y={lY-(up?3:-3)} textAnchor="middle" fontSize="7.5" fill={sc} fontFamily="'JetBrains Mono',monospace" fontWeight={act?"700":"400"} opacity={act?1:0.5} filter={act?"url(#gw)":"none"}>{a.label}</text>
+            <path d={`M${sx},${sy} C${sx-10},${cy2} ${ex+10},${cy2} ${ex},${ey}`} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={act?"none":"6,4"} opacity={op} markerEnd={act?"url(#m-active)":`url(#m-${a.to})`}/>
+            <text x={x} y={lY-(up?4:-4)} textAnchor="middle" fontSize="13" fill={sc} fontFamily="'Inter',sans-serif" fontWeight="900" opacity={act?1:0.85}>{a.label}</text>
           </g>);
         }
+        
         const p1=NP[a.from],p2=NP[a.to];
         const cp={x:(p1.x+p2.x)/2+a.curve.dx,y:(p1.y+p2.y)/2+a.curve.dy};
         const mid=quadPt(p1,p2,cp,0.5);
-        const loY=a.curve.dy<0?-10:10,loX=a.curve.dx>0?8:a.curve.dx<0?-8:0;
+        const loY=a.curve.dy<0?-14:14, loX=a.curve.dx>0?12:a.curve.dx<0?-12:0;
+        
         return(<g key={i}>
-          <path d={`M${p1.x},${p1.y} Q${cp.x},${cp.y} ${p2.x},${p2.y}`} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={act?"none":"6,4"} opacity={op} filter={act?"url(#gs)":"none"} markerEnd={act?"url(#m-active)":`url(#m-${a.to})`}/>
-          <text x={mid.x+loX} y={mid.y+loY} textAnchor="middle" fontSize="7.5" fill={sc} fontFamily="'JetBrains Mono',monospace" fontWeight={act?"700":"400"} opacity={act?1:0.5} filter={act?"url(#gw)":"none"}>{a.label}</text>
+          <path d={`M${p1.x},${p1.y} Q${cp.x},${cp.y} ${p2.x},${p2.y}`} fill="none" stroke={sc} strokeWidth={sw} strokeDasharray={act?"none":"8,5"} opacity={op} markerEnd={act?"url(#m-active)":`url(#m-${a.to})`}/>
+          <text x={mid.x+loX} y={mid.y+loY} textAnchor="middle" fontSize="13" fill={sc} fontFamily="'Inter',sans-serif" fontWeight="900" opacity={act?1:0.85}>{a.label}</text>
         </g>);
       })}
-      <g opacity="0.7">
-        <line x1="36" y1={NP.Wandering.y} x2={NP.Wandering.x-30} y2={NP.Wandering.y} stroke={STATE_CFG.Wandering.color} strokeWidth="1.8" markerEnd="url(#m-Wandering)"/>
-        <text x="18" y={NP.Wandering.y-9} fontSize="9" fill={STATE_CFG.Wandering.color} fontFamily="'JetBrains Mono',monospace" fontWeight="700">START</text>
+      
+      <g opacity="1">
+        {/* 🚨 Thicker, clearer START indicator 🚨 */}
+        <line x1="20" y1={NP.Wandering.y} x2={NP.Wandering.x-45} y2={NP.Wandering.y} stroke={STATE_CFG.Wandering.color} strokeWidth="3.5" markerEnd="url(#m-Wandering)"/>
+        <text x="35" y={NP.Wandering.y-12} fontSize="14" fill={STATE_CFG.Wandering.color} fontFamily="'Inter',sans-serif" fontWeight="900">START</text>
       </g>
+
       {STATES.map(s=>{
-        const{x,y}=NP[s],cfg=STATE_CFG[s],act=s===currentState,R=28;
+        const{x,y}=NP[s],cfg=STATE_CFG[s],act=s===currentState;
+        const R = 38; // 🚨 Massively increased Node Size (from 28 to 38) 🚨
+        
         return(<g key={s} transform={`translate(${x},${y})`}>
-          {act&&[16,8].map((e,ri)=>(<circle key={ri} r={R+e} fill="none" stroke={cfg.color} strokeWidth="1" opacity={0.12+Math.sin(anim*0.14+ri)*0.08}/>))}
-          <circle r={R} fill={act?cfg.bg:"#060e17"} stroke={cfg.color} strokeWidth={act?2.8:1.4} filter={act?"url(#gs)":"none"} style={{transition:"fill 0.4s,stroke-width 0.3s"}}/>
-          {s==="Eaten"&&<circle r={R-5} fill="none" stroke={cfg.color} strokeWidth={act?2.8:1.4} style={{transition:"stroke-width 0.3s"}}/>}
+          {act&&[24,12].map((e,ri)=>(<circle key={ri} r={R+e} fill="none" stroke={cfg.color} strokeWidth="2.5" opacity={0.25+Math.sin(anim*0.14+ri)*0.15}/>))}
+          <circle r={R} fill={act?cfg.bg:"#ffffff"} stroke={cfg.color} strokeWidth={act?5:3.5} style={{transition:"fill 0.4s,stroke-width 0.3s"}}/>
+          
+          {s==="Eaten"&&<circle r={R-8} fill="none" stroke={cfg.color} strokeWidth={act?4:3} style={{transition:"stroke-width 0.3s"}}/>}
+          
           {s==="Frightened"&&act&&frightPct>0&&(()=>{
             const ang=frightPct*Math.PI*2-Math.PI/2;
             const ex=R*Math.cos(ang),ey=R*Math.sin(ang),lg=frightPct>0.5?1:0;
-            return<path d={`M0,${-R} A${R},${R} 0 ${lg},1 ${ex},${ey}`} fill="none" stroke={cfg.color} strokeWidth="4" strokeLinecap="round" opacity="0.85"/>;
+            return<path d={`M0,${-R} A${R},${R} 0 ${lg},1 ${ex},${ey}`} fill="none" stroke={cfg.color} strokeWidth="6" strokeLinecap="round" opacity="0.85"/>;
           })()}
-          <text textAnchor="middle" dominantBaseline="central" fontSize={act?20:16} y="-2" style={{transition:"font-size 0.25s",userSelect:"none"}}>{cfg.emoji}</text>
-          <text textAnchor="middle" y="14" fontSize="8" fill={cfg.color} fontFamily="'JetBrains Mono',monospace" fontWeight="700" opacity="0.9">{cfg.q}</text>
-          <text textAnchor="middle" y={R+15} fontSize="7.5" fill={cfg.color} fontFamily="'JetBrains Mono',monospace" fontWeight={act?"700":"400"} letterSpacing="0.5">{s}</text>
+          
+          {/* 🚨 Bigger Emojis and Internal Text 🚨 */}
+          <text textAnchor="middle" dominantBaseline="central" fontSize={act?32:26} y="-4" style={{transition:"font-size 0.25s",userSelect:"none"}}>{cfg.emoji}</text>
+          <text textAnchor="middle" y="18" fontSize="14" fill={cfg.color} fontFamily="'Inter',sans-serif" fontWeight="900" opacity="0.95">{cfg.q}</text>
+          <text textAnchor="middle" y={R+20} fontSize="13" fill={cfg.color} fontFamily="'Inter',sans-serif" fontWeight="900" letterSpacing="0.5">{s}</text>
         </g>);
       })}
     </svg>
@@ -266,12 +288,12 @@ function DFADiagram({currentState,activeArrow,frightPct}){
 // ==========================================
 function ScorePopup({text,x,y,color}){
   return(
-    <div className="score-pop" style={{left:x,top:y,color}}>{text}</div>
+    <div className="score-pop" style={{left:x,top:y,color, fontWeight: 900, fontSize: "1.4rem"}}>{text}</div>
   );
 }
 
 // ==========================================
-//  MAZE CANVAS
+//  MAZE CANVAS (LIGHT THEME UPDATE)
 // ==========================================
 function MazeCanvas({ghostState,ghostPos,pacPos,pellets,powerPellets,tick,ghostEatenFlash,pacDead,pacRespawnTimer,ghostRespawnTimer,pacBig,frightTicks}){
   const ref=useRef(null);
@@ -279,108 +301,109 @@ function MazeCanvas({ghostState,ghostPos,pacPos,pellets,powerPellets,tick,ghostE
     const cv=ref.current; if(!cv) return;
     const ctx=cv.getContext("2d"); const t=tick;
     ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.fillStyle="#04090f"; ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle="#f8f9fa"; ctx.fillRect(0,0,cv.width,cv.height);
 
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       const v=MAZE_TEMPLATE[r][c],x=c*CELL,y=r*CELL;
       if(v===1){
-        ctx.fillStyle="#0a1a6e"; ctx.fillRect(x,y,CELL,CELL);
-        ctx.strokeStyle="#1a35c0"; ctx.lineWidth=1;
+        ctx.fillStyle="#e3f2fd"; ctx.fillRect(x,y,CELL,CELL);
+        ctx.strokeStyle="#1976d2"; ctx.lineWidth=2;
         ctx.strokeRect(x+1.5,y+1.5,CELL-3,CELL-3);
       } else if(v===0){
-        ctx.fillStyle="#080f1e"; ctx.fillRect(x,y,CELL,CELL);
+        ctx.fillStyle="#f8f9fa"; ctx.fillRect(x,y,CELL,CELL);
       }
     }
     
-    ctx.strokeStyle="#ce93d8cc"; ctx.lineWidth=2.5;
+    ctx.strokeStyle="#ce93d8"; ctx.lineWidth=3.5;
     ctx.beginPath(); ctx.moveTo(6*CELL,5*CELL); ctx.lineTo(9*CELL,5*CELL); ctx.stroke();
 
     pellets.forEach(([r,c])=>{
-      ctx.beginPath(); ctx.arc(c*CELL+CELL/2,r*CELL+CELL/2,2.8,0,Math.PI*2);
-      ctx.fillStyle="#fff9e0cc"; ctx.fill();
+      ctx.beginPath(); ctx.arc(c*CELL+CELL/2,r*CELL+CELL/2,3.5,0,Math.PI*2);
+      ctx.fillStyle="#ff9800"; ctx.fill(); 
     });
     
     powerPellets.forEach(([r,c])=>{
-      const pulse=6+Math.sin(t*0.12)*2.5;
+      const pulse=7+Math.sin(t*0.2)*3;
       const px=c*CELL+CELL/2,py=r*CELL+CELL/2;
-      ctx.beginPath(); ctx.arc(px,py,pulse+8,0,Math.PI*2);
-      ctx.fillStyle="rgba(255,235,59,0.06)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(px,py,pulse+6,0,Math.PI*2);
+      ctx.fillStyle="rgba(255,87,34,0.15)"; ctx.fill();
       ctx.beginPath(); ctx.arc(px,py,pulse,0,Math.PI*2);
-      ctx.fillStyle="#ffeb3b"; ctx.shadowColor="#ffeb3b"; ctx.shadowBlur=20; ctx.fill(); ctx.shadowBlur=0;
+      ctx.fillStyle="#ff5722"; ctx.fill(); 
     });
 
     // ── PAC-MAN ──
     const px=pacPos.c*CELL+CELL/2, py2=pacPos.r*CELL+CELL/2;
     const bigPct=pacBig?Math.min(1,frightTicks/FRIGHT_MAX):0;
-    const PR=pacBig?11+7*bigPct:11;
+    const PR=pacBig?12+8*bigPct:12;
 
     if(pacDead){
       const dp=Math.max(0,pacRespawnTimer/(PAC_RESPAWN_TICKS*TICK_MS));
       const rad=PR*dp;
       if(rad>0.5){
         ctx.beginPath(); ctx.arc(px,py2,rad,0,Math.PI*2);
-        ctx.fillStyle=`rgba(255,235,59,${dp})`; ctx.shadowColor="#ffeb3b"; ctx.shadowBlur=12; ctx.fill(); ctx.shadowBlur=0;
+        ctx.fillStyle=`rgba(255,179,0,${dp})`; ctx.fill();
       }
     } else {
-      const mth=Math.abs(Math.sin(t*0.25))*0.44;
+      const mth=Math.abs(Math.sin(t*0.4))*0.5;
       if(pacBig){
-        ctx.beginPath(); ctx.arc(px,py2,PR+10+Math.sin(t*0.18)*3,0,Math.PI*2);
-        ctx.fillStyle=`rgba(255,235,59,${0.09*bigPct})`; ctx.fill();
-        ctx.beginPath(); ctx.arc(px,py2,PR+5,0,Math.PI*2);
-        ctx.strokeStyle=`rgba(255,210,0,${0.7*bigPct})`; ctx.lineWidth=2.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px,py2,PR+8+Math.sin(t*0.3)*3,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,179,0,${0.15*bigPct})`; ctx.fill();
+        ctx.beginPath(); ctx.arc(px,py2,PR+4,0,Math.PI*2);
+        ctx.strokeStyle=`rgba(255,152,0,${0.8*bigPct})`; ctx.lineWidth=3; ctx.stroke();
       }
       ctx.beginPath(); ctx.moveTo(px,py2); ctx.arc(px,py2,PR,mth,Math.PI*2-mth); ctx.closePath();
-      ctx.fillStyle=pacBig?"#ffe200":"#ffeb3b";
-      ctx.shadowColor=pacBig?"#ffcc00":"#ffeb3b"; ctx.shadowBlur=pacBig?28:14; ctx.fill(); ctx.shadowBlur=0;
+      ctx.fillStyle="#ffb300"; 
+      ctx.fill(); 
     }
 
     // ── GHOST ──
     const gx=ghostPos.c*CELL+CELL/2, gy=ghostPos.r*CELL+CELL/2;
-    const GR=11; const cfg=STATE_CFG[ghostState];
+    const GR=12; const cfg=STATE_CFG[ghostState];
 
     if(ghostEatenFlash){
-      ctx.font="bold 15px 'JetBrains Mono',monospace"; ctx.textAlign="center";
-      ctx.fillStyle="#ba68c8"; ctx.shadowColor="#ba68c8"; ctx.shadowBlur=14;
-      ctx.fillText("+200",gx,gy-24); ctx.shadowBlur=0; ctx.textAlign="left";
+      ctx.font="bold 18px 'Inter',sans-serif"; ctx.textAlign="center";
+      ctx.fillStyle="#8e24aa"; ctx.fillText("+200",gx,gy-24); ctx.textAlign="left";
     }
 
     if(ghostState==="Eaten"){
-      ctx.shadowColor="white"; ctx.shadowBlur=10; ctx.fillStyle="white";
-      ctx.beginPath(); ctx.ellipse(gx-4,gy,3.5,4,0,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(gx+4,gy,3.5,4,0,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0; ctx.fillStyle="#000080";
-      ctx.beginPath(); ctx.arc(gx-2.5,gy+0.5,2,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(gx+5.5,gy+0.5,2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="white";
+      ctx.beginPath(); ctx.ellipse(gx-4,gy,4,5,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(gx+4,gy,4,5,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#000000"; 
+      ctx.beginPath(); ctx.arc(gx-2.5,gy+1,2.5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx+5.5,gy+1,2.5,0,Math.PI*2); ctx.fill();
     } else {
       ctx.beginPath(); ctx.arc(gx,gy-2,GR,Math.PI,0);
       const ww=(GR*2)/3;
       for(let i=0;i<3;i++){ const wx=gx+GR-i*ww; ctx.quadraticCurveTo(wx-ww/4,gy+GR+4,wx-ww/2,gy+GR); }
       ctx.lineTo(gx-GR,gy-2); ctx.closePath();
-      const ff=ghostState==="Frightened"&&frightTicks<15&&Math.sin(t*0.5)>0;
-      if(ghostState==="Frightened"){ ctx.fillStyle=ff?"#e0e0e0":"#1565c0"; ctx.shadowColor=ff?"#e0e0e0":"#3949ab"; }
-      else { ctx.fillStyle=cfg.color; ctx.shadowColor=cfg.color; }
-      ctx.shadowBlur=18; ctx.fill(); ctx.shadowBlur=0;
+      const ff=ghostState==="Frightened"&&frightTicks<8&&Math.sin(t*0.8)>0; 
+      
+      if(ghostState==="Frightened"){ ctx.fillStyle=ff?"#9e9e9e":"#1e88e5"; }
+      else { ctx.fillStyle=cfg.color; }
+      ctx.fill(); 
+      
       if(ghostState!=="Frightened"){
         ctx.fillStyle="white";
-        ctx.beginPath(); ctx.ellipse(gx-3.5,gy-2,3,3.5,0,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(gx+3.5,gy-2,3,3.5,0,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle="#000080";
-        ctx.beginPath(); ctx.arc(gx-2.2,gy-1.8,1.6,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(gx+4.8,gy-1.8,1.6,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(gx-4,gy-2,3.5,4.5,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(gx+4,gy-2,3.5,4.5,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#000000"; 
+        ctx.beginPath(); ctx.arc(gx-2.5,gy-1.5,2,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(gx+5.5,gy-1.5,2,0,Math.PI*2); ctx.fill();
       } else {
-        ctx.fillStyle=ff?"#555":"white";
+        ctx.fillStyle=ff?"#fff":"#ffb300"; 
         ctx.beginPath(); ctx.arc(gx-3.5,gy-1,2.5,0,Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(gx+3.5,gy-1,2.5,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle=ff?"#aaa":"white"; ctx.lineWidth=1.2;
-        ctx.beginPath(); ctx.moveTo(gx-6,gy+4);
-        for(let i=0;i<5;i++) ctx.lineTo(gx-6+i*3,gy+4-(i%2===0?0:3));
+        ctx.strokeStyle=ff?"#fff":"#ffb300"; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(gx-7,gy+4);
+        for(let i=0;i<5;i++) ctx.lineTo(gx-7+i*3.5,gy+4-(i%2===0?0:3));
         ctx.stroke();
       }
     }
     
-    ctx.font="bold 7px 'JetBrains Mono',monospace"; ctx.textAlign="center";
-    ctx.fillStyle=cfg.color; ctx.shadowColor=cfg.color; ctx.shadowBlur=8;
-    ctx.fillText(`${cfg.q} ${ghostState.toUpperCase()}`,gx,gy-GR-9); ctx.shadowBlur=0; ctx.textAlign="left";
+    ctx.font="bold 9px 'Inter',sans-serif"; ctx.textAlign="center";
+    ctx.fillStyle=cfg.color;
+    ctx.fillText(`${cfg.q} ${ghostState.toUpperCase()}`,gx,gy-GR-9); ctx.textAlign="left";
 
   },[ghostState,ghostPos,pacPos,pellets,powerPellets,tick,ghostEatenFlash,pacDead,pacRespawnTimer,ghostRespawnTimer,pacBig,frightTicks]);
 
@@ -421,7 +444,7 @@ export default function App(){
   const [popups,setPopups] = useState([]);
   const popId = useRef(0);
   
-  const spawnPop = useCallback((txt,col,row,color="#ffeb3b")=>{
+  const spawnPop = useCallback((txt,col,row,color="#ff9800")=>{
     const id=++popId.current;
     setPopups(p=>[...p,{id,txt,x:col*CELL+CELL/2,y:row*CELL-4,color}]);
     setTimeout(()=>setPopups(p=>p.filter(x=>x.id!==id)),900);
@@ -433,7 +456,6 @@ export default function App(){
   const [pellets,      setPellets]      = useState(initPellets);
   const [powerPellets, setPowerPellets] = useState(initPPs);
 
-  // Syncing Refs for strictly ordered AI Loop
   const sRef=useRef(currentState);
   const ftRef=useRef(frightTicks);
   const gRef=useRef(ghostPos);
@@ -477,7 +499,6 @@ export default function App(){
     setTick(0); resetMaze(false);
   },[resetMaze]);
 
-  // 60-Second Countdown
   useEffect(()=>{
     if(!running) return;
     const id=setInterval(()=>{
@@ -506,7 +527,6 @@ export default function App(){
     setLog(prev=>[{id:Date.now(),t:new Date().toLocaleTimeString("en-US",{hour12:false}),from:state,to:next,input},...prev].slice(0,12));
     setTimeout(()=>{setActiveArrow(null);setActiveStep(null);},1000);
 
-    // Manual Input Triggers
     if(input === "KillP") {
         setPacDead(true);
         setPacPos({...PAC_START}); pRef.current={...PAC_START};
@@ -517,8 +537,6 @@ export default function App(){
     if(input === "CatchG") {
         setGhostEatenFlash(true); setTimeout(()=>setGhostEatenFlash(false),800);
         setGhostPos({...BASE}); gRef.current={...BASE};
-        
-        // Ghost respawns independently after exactly 3 seconds
         ghostDeadTicksRef.current = GHOST_RESPAWN_TICKS;
         setGhostRespawnTimer(GHOST_RESPAWN_TICKS * TICK_MS);
     }
@@ -526,9 +544,6 @@ export default function App(){
     return true;
   },[]); 
 
-  // ====================================================
-  //  GLITCH-FREE MASTER AI LOOP
-  // ====================================================
   useEffect(()=>{
     if(!running||gameOver) return;
     
@@ -544,7 +559,6 @@ export default function App(){
       let pacMoved = false;
       let ghostMoved = false;
       
-      // -- PAC-MAN MOVEMENT (33% Speed Boost when Big) --
       const pacCanMove = pacBigRef.current ? (localTick % 3 !== 0) : (localTick % 2 === 0);
       
       if (pacDeadTicksRef.current > 0) {
@@ -569,7 +583,6 @@ export default function App(){
         pacMoved = true;
       }
 
-      // -- GHOST MOVEMENT --
       const ghostCanMove = (state === "Frightened") ? (localTick % 3 === 0) : (localTick % 2 === 0);
 
       if (state === "Eaten") {
@@ -596,7 +609,6 @@ export default function App(){
         ghostMoved = true;
       }
 
-      // -- PERFECT COLLISION DETECTION --
       const prevPac = pRef.current;
       const prevGhost = gRef.current;
       
@@ -606,8 +618,7 @@ export default function App(){
                            (nextGhostPos.r === prevPac.r && nextGhostPos.c === prevPac.c);
 
       if ((sameTile || swappedTiles) && state !== "Eaten" && pacDeadTicksRef.current === 0) {
-        // If the ghost is NOT frightened, it kills Pac-Man (even if Pac-Man visually looks big)
-        if (state === "Wandering" || state === "Chasing") {
+        if ((state === "Wandering" || state === "Chasing") && !pacBigRef.current) {
            fireTransition("KillP");
            setPacDead(true);
            setPacBig(false); pacBigRef.current = false;
@@ -615,11 +626,10 @@ export default function App(){
            pacDeadTicksRef.current = PAC_RESPAWN_TICKS;
            setPacRespawnTimer(PAC_RESPAWN_TICKS * TICK_MS);
         } 
-        else if (state === "Frightened") {
-           // Pac-Man Eats Ghost!
+        else if (state === "Frightened" || pacBigRef.current) {
            fireTransition("CatchG");
            setGhostEatenFlash(true); 
-           setScore(s=>s+200); spawnPop("+200 👻", BASE.c, BASE.r, "#ba68c8");
+           setScore(s=>s+200); spawnPop("+200 👻", BASE.c, BASE.r, "#8e24aa");
            setTimeout(()=>setGhostEatenFlash(false),800);
            
            nextGhostPos = {...BASE}; 
@@ -637,20 +647,18 @@ export default function App(){
         }
       }
 
-      // -- DOT CONSUMPTION --
       if (pacDeadTicksRef.current === 0) {
         const eatPP = ppRef.current.some(([r,c])=>r===nextPacPos.r&&c===nextPacPos.c);
         if(eatPP){
           const npp = ppRef.current.filter(([r,c])=>!(r===nextPacPos.r&&c===nextPacPos.c));
           ppRef.current = npp; setPowerPellets(npp);
-          setScore(s=>s+50); spawnPop("+50 ⚡",nextPacPos.c,nextPacPos.r,"#ffeb3b");
+          setScore(s=>s+50); spawnPop("+50 ⚡",nextPacPos.c,nextPacPos.r,"#ff5722");
           
           const currentStateRef = sRef.current;
           if(currentStateRef==="Wandering"||currentStateRef==="Chasing"||currentStateRef==="Frightened") {
               if (currentStateRef !== "Frightened") fireTransition("EatPP");
           }
           
-          // Reset Frightened Timer (Applies to Pac-Man regardless of ghost state)
           setFrightTicks(FRIGHT_MAX); ftRef.current=FRIGHT_MAX;
           setPacBig(true); pacBigRef.current = true;
         } 
@@ -659,7 +667,7 @@ export default function App(){
           if(np.length!==pelRef.current.length){
             pelRef.current = np; setPellets(np);
             setScore(s=>s+10);
-            if(np.length%8===0) spawnPop("+10",nextPacPos.c,nextPacPos.r,"#fff9e0cc");
+            if(np.length%8===0) spawnPop("+10",nextPacPos.c,nextPacPos.r,"#ff9800");
           }
         }
         
@@ -669,14 +677,11 @@ export default function App(){
         }
       }
 
-      // -- APPLY MOVEMENT --
       setPacPos(nextPacPos);
       pRef.current = nextPacPos;
       setGhostPos(nextGhostPos);
       gRef.current = nextGhostPos;
 
-      // -- POWER PELLET TIMER COUNTDOWN --
-      // This now ticks down perfectly independently of the ghost's current state!
       if (ftRef.current > 0) {
         ftRef.current -= 1;
         setFrightTicks(ftRef.current);
@@ -695,7 +700,7 @@ export default function App(){
   const frightPct  = frightTicks/FRIGHT_MAX;
   const meta       = STATE_CFG[currentState];
   const timerPct   = timeLeft/GAME_SEC;
-  const timerColor = timeLeft>20?"#4caf50":timeLeft>10?"#ff9800":"#f44336";
+  const timerColor = timeLeft>20?"#2e7d32":timeLeft>10?"#ef6c00":"#c62828";
   const dotsLeft   = pellets.length+powerPellets.length;
 
   const manualInputs=[
@@ -711,18 +716,15 @@ export default function App(){
   return(
     <div className="app-root">
 
-      {/* Game Over overlay */}
       {gameOver&&(
         <div className="go-overlay">
           <div className="go-card" style={{
-            borderColor:gameOverMsg.includes("CLEARED")?"#ffeb3b55":"#1730a8",
-            boxShadow:`0 0 60px ${gameOverMsg.includes("CLEARED")?"#ffeb3b30":"#29b6f640"}`,
+            borderColor:gameOverMsg.includes("CLEARED")?"#4caf50":"#d32f2f",
           }}>
             <div className="go-title" style={{
-              color:gameOverMsg.includes("CLEARED")?"#ffeb3b":"#ef5350",
-              textShadow:`0 0 22px ${gameOverMsg.includes("CLEARED")?"#ffeb3b":"#ef5350"}`,
+              color:gameOverMsg.includes("CLEARED")?"#2e7d32":"#c62828",
             }}>{gameOverMsg}</div>
-            <div className="go-score">SCORE: <span style={{color:"#ffeb3b",fontWeight:700}}>{score}</span></div>
+            <div className="go-score">SCORE: <span style={{color:"#000",fontWeight:900}}>{score}</span></div>
             <div className="go-sub">{87-dotsLeft} / 87 dots collected</div>
             <button className="go-btn" onClick={resetSim}>🔄 PLAY AGAIN</button>
           </div>
@@ -730,43 +732,42 @@ export default function App(){
       )}
 
       {mazeFlash&&!gameOver&&(
-        <div className="go-overlay" style={{pointerEvents:"none"}}>
-          <div className="cleared-text">✨ MAZE CLEARED! ✨</div>
+        <div className="go-overlay" style={{pointerEvents:"none", background:"rgba(255,255,255,0.7)"}}>
+          <div className="cleared-text" style={{color:"#2e7d32", textShadow:"none"}}>✨ MAZE CLEARED! ✨</div>
         </div>
       )}
 
-      {/* Header */}
       <header className="app-header">
         <div className="app-course-label">ICS3253 · AUTOMATA THEORY &amp; COMPUTATION</div>
         <h1 className="app-title">👻 PAC-MAN GHOST — LIVE DFA SIMULATOR</h1>
 
         <div className="timer-row">
-          <div className="timer-box" style={{borderColor:`${timerColor}55`}}>
+          <div className="timer-box" style={{borderColor:`${timerColor}`}}>
             <span className="timer-label">DEMO TIME</span>
-            <div className="timer-bar-wrap">
-              <div className="timer-bar-fill" style={{width:`${timerPct*100}%`,background:`linear-gradient(90deg,${timerColor}88,${timerColor})`,boxShadow:`0 0 8px ${timerColor}`}}/>
+            <div className="timer-bar-wrap" style={{background: "#e0e0e0"}}>
+              <div className="timer-bar-fill" style={{width:`${timerPct*100}%`,background:`${timerColor}`}}/>
             </div>
             <span className={`timer-digits${timeLeft<=10?" blink":""}`} style={{color:timerColor}}>
               {String(Math.floor(timeLeft/60)).padStart(2,"0")}:{String(timeLeft%60).padStart(2,"0")}
             </span>
           </div>
-          <div className="hud-pill" style={{borderColor:"#29b6f644",color:"#29b6f6",background:"#29b6f611"}}>
+          <div className="hud-pill" style={{borderColor:"#0288d1",color:"#0288d1",background:"#e1f5fe"}}>
             <span className="hud-lbl">LVL</span><span className="hud-val">{mazeLevel}</span>
           </div>
-          <div className="hud-pill" style={{borderColor:"#ffeb3b44",color:"#ffeb3b",background:"#ffeb3b11"}}>
+          <div className="hud-pill" style={{borderColor:"#111",color:"#111",background:"#f5f5f5"}}>
             <span className="hud-lbl">SCORE</span><span className="hud-val">{score}</span>
           </div>
-          <div className="hud-pill" style={{borderColor:"#fff9e044",color:"#fff9e0aa",background:"#fff9e011"}}>
+          <div className="hud-pill" style={{borderColor:"#e65100",color:"#e65100",background:"#fff3e0"}}>
             <span className="hud-lbl">DOTS</span><span className="hud-val">{dotsLeft}</span>
           </div>
           {pacBig&&(
-            <div className="hud-pill power-badge">
+            <div className="hud-pill power-badge" style={{background:"#ffe0b2", borderColor:"#ff9800", color:"#e65100"}}>
               <span className="hud-lbl">⚡ BIG</span>
               <span className="hud-val">{Math.max(1,Math.ceil(frightTicks*TICK_MS/1000))}s</span>
             </div>
           )}
           {currentState==="Eaten"&&ghostRespawnTimer>0&&(
-            <div className="hud-pill" style={{borderColor:"#78909c44",color:"#78909c",background:"#78909c11"}}>
+            <div className="hud-pill" style={{borderColor:"#455a64",color:"#455a64",background:"#eceff1"}}>
               <span className="hud-lbl">👻 RESP</span>
               <span className="hud-val">{Math.ceil(ghostRespawnTimer/1000)}s</span>
             </div>
@@ -776,13 +777,12 @@ export default function App(){
         </div>
       </header>
 
-      {/* Main 3-col grid */}
       <div className="main-grid">
 
         <div className="maze-col">
           <div className="section-label">
             Live Simulation
-            <span style={{marginLeft:8,fontSize:"9px",color:"#546e7a"}}>BFS-AI · {dotsLeft} dots left</span>
+            <span style={{marginLeft:8,fontSize:"12px",color:"#546e7a"}}>BFS-AI · Slower Presentation Mode</span>
           </div>
           <div className="maze-wrapper">
             <MazeCanvas ghostState={currentState} ghostPos={ghostPos} pacPos={pacPos}
@@ -793,28 +793,28 @@ export default function App(){
             {popups.map(p=><ScorePopup key={p.id} text={p.txt} x={p.x} y={p.y} color={p.color}/>)}
           </div>
 
-          <div className="state-badge" style={{borderColor:`${meta.color}55`,"--gc":meta.color}}>
+          <div className="state-badge" style={{borderColor:meta.color, background:meta.bg}}>
             <span className="state-badge-emoji">{meta.emoji}</span>
             <div style={{flex:1}}>
               <div className="state-badge-name" style={{color:meta.color}}>{meta.q} {meta.label}</div>
-              <div className="state-badge-desc">{meta.desc}</div>
+              <div className="state-badge-desc" style={{color:"#333"}}>{meta.desc}</div>
             </div>
             {currentState==="Frightened"&&frightPct>0&&(
               <div className="mini-bar-wrap">
-                <div className="mini-bar-lbl">⚡ {Math.max(1,Math.ceil(frightTicks*TICK_MS/1000))}s</div>
-                <div className="mini-bar"><div className="mini-bar-fill" style={{width:`${frightPct*100}%`}}/></div>
+                <div className="mini-bar-lbl" style={{color:"#8e24aa"}}>⚡ {Math.max(1,Math.ceil(frightTicks*TICK_MS/1000))}s</div>
+                <div className="mini-bar" style={{background:"#fff"}}><div className="mini-bar-fill" style={{width:`${frightPct*100}%`, background:"#8e24aa"}}/></div>
               </div>
             )}
             {currentState==="Eaten"&&(
               <div className="mini-bar-wrap">
-                <div className="mini-bar-lbl" style={{color:"#78909c"}}>RESPAWN {Math.ceil(ghostRespawnTimer/1000)}s</div>
-                <div className="mini-bar"><div className="mini-bar-fill" style={{width:`${(ghostRespawnTimer/(GHOST_RESPAWN_TICKS*TICK_MS))*100}%`,background:"#78909c"}}/></div>
+                <div className="mini-bar-lbl" style={{color:"#455a64"}}>RESPAWN {Math.ceil(ghostRespawnTimer/1000)}s</div>
+                <div className="mini-bar" style={{background:"#fff"}}><div className="mini-bar-fill" style={{width:`${(ghostRespawnTimer/(GHOST_RESPAWN_TICKS*TICK_MS))*100}%`,background:"#455a64"}}/></div>
               </div>
             )}
             {pacDead&&(
               <div className="mini-bar-wrap">
-                <div className="mini-bar-lbl" style={{color:"#ffeb3b"}}>PAC {Math.ceil(pacRespawnTimer/1000)}s</div>
-                <div className="mini-bar"><div className="mini-bar-fill" style={{width:`${(pacRespawnTimer/(PAC_RESPAWN_TICKS*TICK_MS))*100}%`,background:"#ffeb3b"}}/></div>
+                <div className="mini-bar-lbl" style={{color:"#d32f2f"}}>PAC {Math.ceil(pacRespawnTimer/1000)}s</div>
+                <div className="mini-bar" style={{background:"#fff"}}><div className="mini-bar-fill" style={{width:`${(pacRespawnTimer/(PAC_RESPAWN_TICKS*TICK_MS))*100}%`,background:"#d32f2f"}}/></div>
               </div>
             )}
           </div>
@@ -822,24 +822,19 @@ export default function App(){
 
         <div className="diagram-col">
           <div className="section-label">DFA State Diagram (δ)</div>
-          <div className="diagram-svg-wrap">
+          <div className="diagram-svg-wrap" style={{background:"#fff", border:"2px solid #cfd8dc"}}>
             <DFADiagram currentState={currentState} activeArrow={activeArrow} frightPct={frightPct}/>
           </div>
           <div>
-            <div className="section-label">Formal Definition</div>
+            <div className="section-label" style={{marginTop:"20px"}}>Formal Definition</div>
             <div className="formal-box">
-              <div>A <strong style={{color:"#eceff1"}}>DFA</strong> M is a 5-tuple:</div>
-              <div className="eq">M = (Q, Σ, δ, q₀, F)</div>
+              <div>A <strong style={{color:"#111"}}>DFA</strong> M is a 5-tuple:</div>
+              <div className="eq" style={{color:"#0288d1"}}>M = (Q, Σ, δ, q₀, F)</div>
               <div><span className="lbl">Q</span> = &#123; q₀ (Wandering), q₁ (Chasing), q₂ (Frightened), q₃ (Eaten) &#125;</div>
               <div><span className="lbl">Σ</span> = &#123; SeeP, EatPP, CatchG, Timer, Home, KillP, NoEvent &#125;</div>
               <div><span className="lbl">δ</span> : Q × Σ → Q</div>
               <div><span className="lbl">q₀</span> = q₀ (Wandering) &nbsp;(initial state)</div>
               <div><span className="lbl">F</span> = &#123; q₃ (Eaten) &#125; &nbsp;(accepting state)</div>
-              <div className="note">
-                ⚡ Power Pellet → Pac BIG 5s, Ghost → Frightened<br/>
-                👻 Ghost eaten → respawns in 3s exactly<br/>
-                💀 Pac killed → revives in 2s exactly
-              </div>
             </div>
           </div>
         </div>
@@ -847,32 +842,32 @@ export default function App(){
         <div className="controls-col">
           <div className="section-label">Inputs (Σ)</div>
           <div className="panel" style={{padding:"10px"}}>
-            <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+            <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
               {manualInputs.map(({label,input,icon})=>{
                 const valid=!!TRANSITIONS[`${currentState}|${input}`];
                 return(
                   <button key={input} className={`ebtn ${valid?"ok":""}`}
                     disabled={!running||gameOver} onClick={()=>fireTransition(input)}>
-                    <span>{icon}</span>
+                    <span style={{fontSize:"1.2rem"}}>{icon}</span>
                     <span style={{flex:1}}>{label}</span>
-                    <span className="ebtn-valid-dot">{valid?"✓":"✗"}</span>
+                    <span className="ebtn-valid-dot" style={{color: valid?"#fff":"#9e9e9e"}}>{valid?"✓":"✗"}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <div className="section-label">Event Log</div>
+          <div className="section-label" style={{marginTop:"20px"}}>Event Log</div>
           <div className="log-box">
-            {log.length===0&&<div className="log-empty">Awaiting events…</div>}
+            {log.length===0&&<div className="log-empty" style={{color:"#546e7a"}}>Awaiting events…</div>}
             {log.map(e=>(
-              <div key={e.id} className="log-entry" style={{borderColor:`${STATE_CFG[e.to]?.color||"#fff"}33`}}>
-                <span className="log-entry-time">{e.t}</span>
+              <div key={e.id} className="log-entry" style={{borderLeftColor:STATE_CFG[e.to]?.color||"#111"}}>
+                <span className="log-entry-time" style={{color:"#546e7a"}}>{e.t}</span>
                 <span className="log-entry-arrow">
-                  <span style={{color:STATE_CFG[e.from]?.color||"#fff"}}>{STATE_CFG[e.from]?.q} {e.from}</span>
-                  <span style={{color:"#37474f"}}> → </span>
-                  <span style={{color:STATE_CFG[e.to]?.color||"#fff"}}>{STATE_CFG[e.to]?.q} {e.to}</span>
+                  <span style={{color:STATE_CFG[e.from]?.color||"#111"}}>{STATE_CFG[e.from]?.q} {e.from}</span>
+                  <span style={{color:"#90a4ae", margin:"0 4px"}}> → </span>
+                  <span style={{color:STATE_CFG[e.to]?.color||"#111"}}>{STATE_CFG[e.to]?.q} {e.to}</span>
                 </span>
-                <span className="log-entry-input">⚡ {e.input}</span>
+                <span className="log-entry-input" style={{color:"#111"}}>⚡ {e.input}</span>
               </div>
             ))}
           </div>
@@ -893,9 +888,9 @@ export default function App(){
                   return(
                     <tr key={k} className={`${isAct?"row-active":""} ${isSelf?"row-self":""}`}>
                       <td style={{color:STATE_CFG[from].color}}><strong>{STATE_CFG[from].q}</strong> {from}</td>
-                      <td style={{color:"#eceff1",fontWeight:"600"}}>{inp}</td>
+                      <td style={{color:"#111",fontWeight:"800"}}>{inp}</td>
                       <td style={{color:STATE_CFG[to].color}}><strong>{STATE_CFG[to].q}</strong> {to}</td>
-                      <td>{isSelf?<span className="type-self">⟳ Self-loop</span>:<span className="type-trans">→ Transition</span>}</td>
+                      <td style={{color:"#455a64"}}>{isSelf?<span className="type-self">⟳ Self-loop</span>:<span className="type-trans">→ Transition</span>}</td>
                     </tr>
                   );
                 })}
@@ -919,7 +914,7 @@ export default function App(){
                     <div className="step-cell" style={{color:STATE_CFG[row.from].color}}><strong>{STATE_CFG[row.from].q}</strong>&nbsp;{row.from}</div>
                     <div className="step-cell"><span className="input-badge">{row.input}</span></div>
                     <div className="step-cell" style={{color:STATE_CFG[row.to].color}}><strong>{STATE_CFG[row.to].q}</strong>&nbsp;{row.to}</div>
-                    <div className={`step-cell ${row.self?"step-meaning-self":"step-meaning-normal"}`}>{row.meaning}</div>
+                    <div className={`step-cell ${row.self?"step-meaning-self":"step-meaning-normal"}`} style={{color:"#333"}}>{row.meaning}</div>
                   </div>
                 );
               })}
@@ -928,7 +923,7 @@ export default function App(){
         </div>
       </div>
 
-      <footer className="app-footer">
+      <footer className="app-footer" style={{color:"#455a64"}}>
         ICS3253 · AUTOMATA THEORY &amp; COMPUTATION · PAC-MAN DFA SIMULATOR © 2026
       </footer>
     </div>
