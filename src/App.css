@@ -55,7 +55,21 @@ body {
 .input-badge { background: #102a43; color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 800; }
 
 /* Logs */
-.log-box { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.log-box { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 8px; 
+  padding: 12px; 
+  max-height: 400px; /* Prevents the box from stretching the grid */
+  overflow-y: auto;  /* Adds the vertical scrollbar */
+}
+
+/* Clean, modern custom scrollbar styling */
+.log-box::-webkit-scrollbar { width: 8px; }
+.log-box::-webkit-scrollbar-track { background: #f0f4f8; border-radius: 4px; }
+.log-box::-webkit-scrollbar-thumb { background: #bcccdc; border-radius: 4px; }
+.log-box::-webkit-scrollbar-thumb:hover { background: #9fb3c8; }
+
 .log-entry { display: flex; justify-content: space-between; background: #f8f9fa; padding: 10px; border-left: 4px solid; border-radius: 4px; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; }
 
 /* Header UI Elements */

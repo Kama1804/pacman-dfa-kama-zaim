@@ -524,7 +524,7 @@ export default function App(){
     const si=STEP_TABLE.findIndex(s=>s.from===state&&s.input===input);
     if(si>=0) setActiveStep(si);
     
-    setLog(prev=>[{id:Date.now(),t:new Date().toLocaleTimeString("en-US",{hour12:false}),from:state,to:next,input},...prev].slice(0,12));
+    setLog(prev=>[{id:Date.now(),t:new Date().toLocaleTimeString("en-US",{hour12:false}),from:state,to:next,input},...prev].slice(0,50));
     setTimeout(()=>{setActiveArrow(null);setActiveStep(null);},1000);
 
     if(input === "KillP") {
@@ -782,7 +782,7 @@ export default function App(){
         <div className="maze-col">
           <div className="section-label">
             Live Simulation
-            <span style={{marginLeft:8,fontSize:"12px",color:"#546e7a"}}>BFS-AI · Slower Presentation Mode</span>
+            <span style={{marginLeft:8,fontSize:"12px",color:"#546e7a"}}>BFS-AI · Simulation Presentation</span>
           </div>
           <div className="maze-wrapper">
             <MazeCanvas ghostState={currentState} ghostPos={ghostPos} pacPos={pacPos}
